@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "TBankOA"
+version = "0.1.0"
+description = "Python клиент для работы с API сервиса Интернет-эквайринг от Т-Банка"
+authors = [{ name = "hecurh", email = "hecker@hecur.ru" }]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.8"
+dependencies = [
+    "httpx",
+    "pydantic"
+]
