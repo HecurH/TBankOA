@@ -22,7 +22,7 @@ class InitializePaymentInfo(SignedBaseModel):
     Amount: int
     """Сумма в копейках. Например, 3 руб. 12коп. — это число 312.\n\nПараметр должен быть равен сумме всех параметров Amount, переданных в объекте Items.\n\nМинимальная сумма операции с помощью СБП составляет 10 руб."""
     
-    OrderId: str = Field(max_length=32)
+    OrderId: str = Field(max_length=36)
     """Идентификатор заказа в системе мерчанта. Должен быть уникальным для каждой операции."""
     
     Description: Optional[str] = Field(default=None, max_length=140)

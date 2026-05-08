@@ -16,16 +16,23 @@ class AsyncOnlineAcquiringClient:
         self,
         terminal_key: str,
         password: str,
-        base_url: str = "https://securepay.tinkoff.ru/v2",
+        base_url: str = "https://securepay.tinkoff.ru/v2", 
+        http_client: httpx.AsyncClient | None = None
     ):
         self.terminal_key = terminal_key
         self.password = password
         self.base_url = base_url
         self._logger = logging.getLogger(__name__)
-        self.httpx_client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
+        self.httpx_client = http_client or httpx.AsyncClient(timeout=httpx.Timeout(15.0))
 
     async def close(self):
         await self.httpx_client.aclose()
+    
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await self.close()
 
     # ── универсальный метод ───────────────────────────────────────────────────
 
@@ -82,11 +89,10 @@ class AsyncOnlineAcquiringClient:
                 NotificationURL=notification_url,
                 SuccessURL=success_url,
                 FailURL=fail_url,
-                RedirectDueDate=redirect_due_date
-                or (datetime.now(timezone.utc) + timedelta(minutes=60)),
+                RedirectDueDate=redirect_due_date,
                 DATA=data or CommonPaymentDATA()
             ),
-            InitializePaymentResponse,
+            InitializePaymentResponse
         )
 
     async def cancel_payment(
@@ -142,7 +148,12 @@ class AsyncOnlineAcquiringClient:
                 )
                 response.raise_for_status()
                 return response
-            except httpx.RequestError as exc:
+            except (httpx.HTTPStatusError, httpx.RequestError) as exc:
+                status = getattr(exc.response, 'status_code', None) if isinstance(exc, httpx.HTTPStatusError) else None
+                
+                if status is not None and status < 500 and status != 429:
+                    raise
+                    
                 last_exc = exc
                 self._logger.warning(
                     "Attempt %d/%d failed: %s. Retry in %.1fs…",
